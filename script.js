@@ -1,5 +1,4 @@
 let currentQuote = null;
-let currentCategory = 'inspirational';
 let savedQuotes = JSON.parse(localStorage.getItem('savedQuotes')) || [];
 
 const burger = document.getElementById('burger');
@@ -50,15 +49,6 @@ function setupEventListeners() {
     newQuoteBtn.addEventListener('click', fetchQuote);
     saveQuoteBtn.addEventListener('click', saveCurrentQuote);
 
-    document.querySelectorAll('.category-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            currentCategory = card.dataset.category;
-            fetchQuote();
-        });
-    });
-
     contactForm.addEventListener('submit', handleFormSubmit);
 
     scrollTop.addEventListener('click', () => {
@@ -78,18 +68,34 @@ async function fetchQuote() {
         newQuoteBtn.disabled = true;
         newQuoteBtn.textContent = 'Loading...';
 
-        const response = await fetch(`https://api.quotable.io/random`);
+        const response = await fetch('https://dummyjson.com/quotes/random');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        
+        currentQuote = {
+            content: data.quote,
+            author: data.author
+        };
 
-        currentQuote = data;
         quoteText.textContent = `"${currentQuote.content}"`;
         quoteAuthor.textContent = `- ${currentQuote.author}`;
+        
     } catch (error) {
+        console.error('Error fetching quote:', error);
+        
+        // Fallback quotes
         const fallbackQuotes = [
             { content: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
             { content: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
-            { content: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" }
+            { content: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+            { content: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+            { content: "The only impossible journey is the one you never begin.", author: "Tony Robbins" }
         ];
+        
         const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
         currentQuote = randomQuote;
         quoteText.textContent = `"${randomQuote.content}"`;
@@ -99,7 +105,6 @@ async function fetchQuote() {
         newQuoteBtn.textContent = 'New Quote';
     }
 }
-
 
 function saveCurrentQuote() {
     if (!currentQuote) return;
@@ -111,8 +116,7 @@ function saveCurrentQuote() {
     savedQuotes.push({
         id: quoteId,
         content: currentQuote.content,
-        author: currentQuote.author,
-        category: currentCategory
+        author: currentQuote.author
     });
     localStorage.setItem('savedQuotes', JSON.stringify(savedQuotes));
     saveQuoteBtn.textContent = 'Saved!';
@@ -121,6 +125,7 @@ function saveCurrentQuote() {
         saveQuoteBtn.textContent = 'Save Quote';
         saveQuoteBtn.style.background = '#667eea';
     }, 2000);
+    showFavorites(); 
 }
 
 function handleFormSubmit(e) {
@@ -131,27 +136,33 @@ function handleFormSubmit(e) {
     const password = formData.get('password');
     const message = formData.get('message');
     let isValid = true;
+    
     document.querySelectorAll('.form-group').forEach(group => {
         group.classList.remove('error');
         group.querySelector('.error-message').style.display = 'none';
     });
+    
     if (!name.trim()) {
         showError('name', 'Please enter your name');
         isValid = false;
     }
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim() || !emailRegex.test(email)) {
         showError('email', 'Please enter a valid email');
         isValid = false;
     }
+    
     if (!password.trim() || password.length < 8) {
         showError('password', 'Password must be at least 8 characters');
         isValid = false;
     }
+    
     if (!message.trim()) {
         showError('message', 'Please enter your message');
         isValid = false;
     }
+    
     if (isValid) {
         const submitBtn = document.querySelector('.submit-btn');
         submitBtn.textContent = 'Sending...';
@@ -198,4 +209,37 @@ function showCookieNotification() {
 function acceptCookies() {
     localStorage.setItem('cookieAccepted', 'true');
     cookieNotification.classList.remove('show');
+}
+
+function showFavorites() {
+    const grid = document.getElementById('favoritesGrid');
+    grid.innerHTML = '';
+
+    if (savedQuotes.length === 0) {
+        grid.innerHTML = `<p style="text-align: center; color: #666; grid-column: 1 / -1;">
+            No favorite quotes yet. Start saving some inspiring quotes!
+        </p>`;
+        return;
+    }
+
+    savedQuotes.forEach(quote => {
+        const quoteCard = document.createElement('div');
+        quoteCard.className = 'favorite-quote';
+        quoteCard.innerHTML = `
+            <p>"${quote.content}"</p>
+            <p style="font-weight: bold; margin-top: 10px;">- ${quote.author}</p>
+            <button class="remove-favorite" title="Remove" data-id="${quote.id}">×</button>
+        `;
+        grid.appendChild(quoteCard);
+    });
+
+    // Add delete handlers
+    document.querySelectorAll('.remove-favorite').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const id = e.target.dataset.id;
+            savedQuotes = savedQuotes.filter(q => q.id !== id);
+            localStorage.setItem('savedQuotes', JSON.stringify(savedQuotes));
+            showFavorites();
+        });
+    });
 }
