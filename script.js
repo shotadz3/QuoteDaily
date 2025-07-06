@@ -88,7 +88,6 @@ async function fetchQuote() {
     } catch (error) {
         console.error('Error fetching quote:', error);
         
-        // Fallback quotes
         const fallbackQuotes = [
             { content: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
             { content: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
@@ -234,7 +233,6 @@ function showFavorites() {
         grid.appendChild(quoteCard);
     });
 
-    // Add delete handlers
     document.querySelectorAll('.remove-favorite').forEach(button => {
         button.addEventListener('click', (e) => {
             const id = e.target.dataset.id;
