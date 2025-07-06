@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     showCookieNotification();
     fetchQuote();
+    showFavorites();
 });
 
 function setupEventListeners() {
